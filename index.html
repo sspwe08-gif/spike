@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Spike App</title>
+  <title>Floating Spike App</title>
   <style>
     #floatingApp {
       position: fixed;
@@ -31,7 +31,7 @@
 <body>
 
 <div id="floatingApp">
-  <input id="time" placeholder="HHMM" maxlength="4" oninput="autoColon(this)">
+  <input id="time" placeholder="HH:MM" maxlength="5" oninput="autoColon(this)">
   <input id="spike" type="number" placeholder="Spike">
   <button onclick="generate()">Generate</button>
   <div id="result"></div>
@@ -40,10 +40,8 @@
 <script>
 function autoColon(field){
   let v = field.value.replace(/[^0-9]/g,""); // keep only digits
-  if(v.length >= 4){
+  if(v.length > 2){
     field.value = v.slice(0,2) + ":" + v.slice(2,4);
-  } else if(v.length >= 3){
-    field.value = v.slice(0,2) + ":" + v.slice(2);
   } else {
     field.value = v;
   }
@@ -140,5 +138,6 @@ function generate(){
 
 </body>
 </html>
+
 
 
