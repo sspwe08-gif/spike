@@ -1,73 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Floating Spike App</title>
+  <style>
+    #floatingApp {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 320px;
+      background: #222;
+      color: #fff;
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      z-index: 9999;
+      font-family: sans-serif;
+    }
+    input, button {
+      margin: 6px 0;
+      padding: 6px;
+      width: 100%;
+      border-radius: 4px;
+      border: none;
+    }
+    button { background: #4caf50; color: #fff; cursor: pointer; }
+    h3 { margin-top: 12px; }
+  </style>
+</head>
+<body>
+
+<div id="floatingApp">
+  <input id="time" placeholder="HHMM" maxlength="4" oninput="autoColon(this)">
+  <input id="spike" type="number" placeholder="Spike">
+  <button onclick="generate()">Generate</button>
+  <div id="result"></div>
+</div>
+
 <script>
-
-// 🔐 PASSCODE
-const PASS = "colsnist";
-
-// ---------- SAVE SPIKES ----------
-function saveSpike(value){
-  let spikes = JSON.parse(localStorage.getItem("spikes") || "[]");
-  spikes.push(value);
-  localStorage.setItem("spikes", JSON.stringify(spikes));
+function autoColon(field){
+  let v = field.value.replace(/[^0-9]/g,"");
+  if(v.length >= 3){
+    field.value = v.slice(0,2) + ":" + v.slice(2,4);
+  } else {
+    field.value = v;
+  }
 }
 
-// ---------- LOAD SPIKES ----------
-function getSpikes(){
-  return JSON.parse(localStorage.getItem("spikes") || "[]");
-}
-
-// ---------- CLEAR ----------
-function clearSpikes(){
-  localStorage.removeItem("spikes");
-  alert("History cleared");
-}
-
-// ---------- TIME ----------
 function parseTime(t){
   let parts = t.split(":").map(Number);
-  if(parts.length !== 3 || parts.some(isNaN)) return null;
-  return {h:parts[0], m:parts[1], s:parts[2]};
+  if(parts.length !== 2 || parts.some(isNaN)) return null;
+  return {h:parts[0], m:parts[1]};
 }
 
-function format(h,m,s){
-  if(s >= 60){ m += Math.floor(s/60); s%=60; }
+function format(h,m){
   if(m >= 60){ h += Math.floor(m/60); m%=60; }
   h = h % 24;
-  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
 }
 
-// ---------- ANALYSIS ----------
 function analyze(spikes){
   if(spikes.length === 0) return "med";
-
   let avg = spikes.reduce((a,b)=>a+b,0) / spikes.length;
-
   if(avg < 2) return "low";
   if(avg < 5) return "med";
   return "high";
 }
 
-// ---------- VOL ----------
 function nextVol(current){
   const r = Math.random();
-
   if(current === "high"){
     if(r < 0.5) return "high";
     if(r < 0.8) return "med";
     return "low";
   }
-
   if(current === "med"){
     if(r < 0.4) return "med";
     if(r < 0.7) return "high";
     return "low";
   }
-
   if(r < 0.5) return "low";
   if(r < 0.85) return "med";
   return "high";
 }
 
-// ---------- RANGE ----------
 function makeRange(vol){
   if(vol === "low"){
     return `${(1 + Math.random()*2).toFixed(1)}x – ${(2.5 + Math.random()*3).toFixed(1)}x`;
@@ -78,45 +94,35 @@ function makeRange(vol){
   return `${(5 + Math.random()*10).toFixed(1)}x – ${(20 + Math.random()*40).toFixed(1)}x`;
 }
 
-// ---------- MAIN ----------
 function generate(){
-
   let t = document.getElementById("time").value.trim();
   let s = parseFloat(document.getElementById("spike").value);
-
   let time = parseTime(t);
 
   if(!time){
-    alert("Invalid time format (HH:MM:SS)");
+    alert("Invalid time format (HH:MM)");
     return;
   }
-
   if(isNaN(s) || s <= 0){
     alert("Enter valid spike number");
     return;
   }
 
-  // 💾 SAVE SPIKE
-  saveSpike(s);
+  let history = JSON.parse(localStorage.getItem("spikes") || "[]");
+  history.push(s);
+  localStorage.setItem("spikes", JSON.stringify(history));
 
-  // 📊 USE HISTORY
-  let history = getSpikes();
   let currentVol = analyze(history);
-
   let output = [];
 
   for(let i=1;i<=5;i++){
-
     currentVol = nextVol(currentVol);
-
     let h = time.h;
     let m = time.m + (i*2);
-    let sec = time.s;
-
     output.push(`
       <p class="${currentVol}">
         Window ${i}: <span class="range">${makeRange(currentVol)}</span><br>
-        Time: ${format(h,m,sec)} – ${format(h,m+2,sec)}
+        Time: ${format(h,m)} – ${format(h,m+2)}
       </p>
     `);
   }
@@ -128,18 +134,8 @@ function generate(){
     ${output.join("")}
   `;
 }
-
-// ---------- LOCK ----------
-function unlock(){
-  const field = document.getElementById("passcode");
-  const input = field.value.trim();
-
-  if(input === PASS){
-    document.getElementById("lockscreen").style.display = "none";
-  } else {
-    document.getElementById("error").innerText = "Wrong passcode";
-    field.value = "";
-  }
-}
-
 </script>
+
+</body>
+</html>
+
