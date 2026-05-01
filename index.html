@@ -1,120 +1,24 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Pattern Window Simulator</title>
-
-  <style>
-    body {
-      background: #0b0b0b;
-      color: white;
-      font-family: Arial;
-      text-align: center;
-      padding: 20px;
-    }
-
-    input, button {
-      padding: 10px;
-      margin: 6px;
-      font-size: 14px;
-      border-radius: 6px;
-      border: none;
-    }
-
-    input {
-      width: 150px;
-    }
-
-    button {
-      background: #00ff88;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    button:hover {
-      background: #00cc6a;
-    }
-
-    .range {
-      color: #00ff88;
-      font-weight: bold;
-    }
-
-    .low { color: #00bfff; }
-    .med { color: #a020f0; }
-    .high { color: #ff4da6; }
-
-    #result {
-      margin-top: 20px;
-    }
-
-    #lockscreen {
-      position: fixed;
-      width: 100%;
-      height: 100%;
-      background: black;
-      top: 0;
-      left: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      z-index: 9999;
-    }
-
-    #error {
-      color: red;
-      margin-top: 10px;
-    }
-  </style>
-</head>
-
-<body>
-
-<!-- LOCKSCREEN -->
-<div id="lockscreen">
-  <h2>🔐 Enter Passcode</h2>
-  <input type="password" id="passcode" placeholder="Enter passcode">
-  <button onclick="unlock()">Unlock</button>
-  <div id="error"></div>
-</div>
-
-<h3>📡 LIVE SPIKE ANALYZER</h3>
-
-<input type="text" id="time" placeholder="HH:MM:SS">
-<br>
-<button onclick="generate()">Generate</button>
-
-<div id="result"></div>
-
 <script>
 
 // 🔐 PASSCODE
 const PASS = "colsnist";
 
-// 🔗 BACKEND LINK (DO NOT CHANGE unless port changes)
-const API_URL = "http://localhost:3000/spikes";
-
-// ---------- FETCH SPIKES ----------
-async function fetchSpikes(){
-  try {
-    const res = await fetch(API_URL);
-    const data = await res.json();
-    return data;
-  } catch(err){
-    alert("⚠️ Cannot connect to server");
-    return [];
-  }
+// ---------- SAVE SPIKES ----------
+function saveSpike(value){
+  let spikes = JSON.parse(localStorage.getItem("spikes") || "[]");
+  spikes.push(value);
+  localStorage.setItem("spikes", JSON.stringify(spikes));
 }
 
-// ---------- ANALYSIS ----------
-function analyzeSpikes(spikes){
-  if(spikes.length === 0) return "med";
+// ---------- LOAD SPIKES ----------
+function getSpikes(){
+  return JSON.parse(localStorage.getItem("spikes") || "[]");
+}
 
-  let avg = spikes.reduce((a,b)=>a+b,0) / spikes.length;
-
-  if(avg < 2) return "low";
-  if(avg < 5) return "med";
-  return "high";
+// ---------- CLEAR ----------
+function clearSpikes(){
+  localStorage.removeItem("spikes");
+  alert("History cleared");
 }
 
 // ---------- TIME ----------
@@ -129,6 +33,17 @@ function format(h,m,s){
   if(m >= 60){ h += Math.floor(m/60); m%=60; }
   h = h % 24;
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+// ---------- ANALYSIS ----------
+function analyze(spikes){
+  if(spikes.length === 0) return "med";
+
+  let avg = spikes.reduce((a,b)=>a+b,0) / spikes.length;
+
+  if(avg < 2) return "low";
+  if(avg < 5) return "med";
+  return "high";
 }
 
 // ---------- VOL ----------
@@ -164,28 +79,34 @@ function makeRange(vol){
 }
 
 // ---------- MAIN ----------
-async function generate(){
+function generate(){
 
   let t = document.getElementById("time").value.trim();
+  let s = parseFloat(document.getElementById("spike").value);
+
   let time = parseTime(t);
 
   if(!time){
-    alert("Enter time as HH:MM:SS");
+    alert("Invalid time format (HH:MM:SS)");
     return;
   }
 
-  let spikes = await fetchSpikes();
-
-  if(spikes.length === 0){
-    document.getElementById("result").innerHTML = "❌ No data from server";
+  if(isNaN(s) || s <= 0){
+    alert("Enter valid spike number");
     return;
   }
 
-  let currentVol = analyzeSpikes(spikes);
+  // 💾 SAVE SPIKE
+  saveSpike(s);
+
+  // 📊 USE HISTORY
+  let history = getSpikes();
+  let currentVol = analyze(history);
 
   let output = [];
 
   for(let i=1;i<=5;i++){
+
     currentVol = nextVol(currentVol);
 
     let h = time.h;
@@ -201,9 +122,9 @@ async function generate(){
   }
 
   document.getElementById("result").innerHTML = `
-    <h3>📊 Prediction</h3>
-    <p>Total spikes: ${spikes.length}</p>
-    <p>Start: <b class="${currentVol}">${currentVol.toUpperCase()}</b></p>
+    <h3>📡 Future Windows</h3>
+    <p>Total Stored Spikes: ${history.length}</p>
+    <p>Pattern: <b class="${currentVol}">${currentVol.toUpperCase()}</b></p>
     ${output.join("")}
   `;
 }
@@ -222,6 +143,3 @@ function unlock(){
 }
 
 </script>
-
-</body>
-</html>
