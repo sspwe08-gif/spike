@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Floating Spike App</title>
+  <title>Spike App</title>
   <style>
     #floatingApp {
       position: fixed;
@@ -41,16 +41,12 @@
 function autoColon(field){
   let v = field.value.replace(/[^0-9]/g,""); // keep only digits
   if(v.length >= 4){
-    // full HHMM → HH:MM
     field.value = v.slice(0,2) + ":" + v.slice(2,4);
   } else if(v.length >= 3){
-    // partial HHM → HH:M
     field.value = v.slice(0,2) + ":" + v.slice(2);
   } else {
     field.value = v;
   }
-}
-
 }
 
 function parseTime(t){
@@ -144,4 +140,5 @@ function generate(){
 
 </body>
 </html>
+
 
